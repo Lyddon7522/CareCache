@@ -9,14 +9,28 @@
   "overviewTitle": "Overview",
   "nothingNeedsAttention": "Nothing needs attention",
   "nothingNeedsAttentionDescription": "No overdue tasks or low-stock supplies.",
-  "getStarted": "Add your first item",
+  "everythingOnTrack": "Everything is on track",
+  "getStarted": "Start here",
+  "trackFirstSupply": "Track your first supply",
+  "trackFirstSupplyDescription": "Scan a barcode or add the details manually.",
   "needsAttention": "Needs attention",
+  "attentionCount": "{count, plural, =1{1 item needs attention} other{{count} items need attention}}",
+  "@attentionCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "attentionDescription": "Review overdue schedules and supplies that are running low.",
   "dueSoon": "Due soon",
   "lowStock": "Low stock",
   "nextUp": "Next up",
+  "upcomingReminders": "Upcoming reminders",
+  "noUpcomingReminders": "No reminders scheduled",
+  "noUpcomingRemindersDescription": "Add a cleaning, replacement, or maintenance schedule.",
   "viewAll": "View all",
   "quickActions": "Add or scan",
   "statusSummary": "Status",
+  "inventorySnapshot": "Inventory snapshot",
   "scheduled": "Scheduled",
   "onHand": "On hand",
   "inStock": "In stock",
@@ -197,6 +211,12 @@
       "count": { "type": "int" }
     }
   },
+  "overdueCount": "{count, plural, =0{Nothing overdue} =1{1 overdue task} other{{count} overdue tasks}}",
+  "@overdueCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "deviceCount": "{count, plural, =0{No devices} =1{1 device} other{{count} devices}}",
   "@deviceCount": {
     "placeholders": {
@@ -220,6 +240,12 @@
   "@dueDateValue": {
     "placeholders": {
       "date": { "type": "String" }
+    }
+  },
+  "repeatsEvery": "Repeats every {cadence}",
+  "@repeatsEvery": {
+    "placeholders": {
+      "cadence": { "type": "String" }
     }
   },
   "categoryCpap": "CPAP",

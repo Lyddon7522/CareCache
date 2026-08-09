@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 abstract final class CareColors {
   static const Color primary = Color(0xFF4A4FC4);
@@ -88,7 +89,7 @@ abstract final class CareTheme {
       colorScheme: scheme,
       visualDensity: VisualDensity.standard,
     );
-    const radius = BorderRadius.all(Radius.circular(20));
+    const radius = BorderRadius.all(Radius.circular(24));
     return base.copyWith(
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -96,6 +97,10 @@ abstract final class CareTheme {
         surfaceTintColor: Colors.transparent,
         centerTitle: false,
         elevation: 0,
+        toolbarHeight: 68,
+        systemOverlayStyle: scheme.brightness == Brightness.light
+            ? SystemUiOverlayStyle.dark
+            : SystemUiOverlayStyle.light,
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
           color: scheme.onSurface,
           fontWeight: FontWeight.w700,
@@ -105,7 +110,8 @@ abstract final class CareTheme {
       cardTheme: CardThemeData(
         color: scheme.surface,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: 1,
+        shadowColor: scheme.shadow.withValues(alpha: 0.34),
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
@@ -114,17 +120,34 @@ abstract final class CareTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          minimumSize: const Size(48, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          elevation: 1,
+          shadowColor: scheme.shadow,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 52),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          side: BorderSide(color: scheme.outlineVariant, width: 1.2),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
           minimumSize: const Size(48, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: BorderSide(color: scheme.outlineVariant),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -143,7 +166,9 @@ abstract final class CareTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: scheme.surface,
         elevation: 0,
+        height: 72,
         indicatorColor: scheme.primaryContainer,
+        indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         labelTextStyle: WidgetStatePropertyAll<TextStyle>(
           base.textTheme.labelMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
@@ -152,6 +177,11 @@ abstract final class CareTheme {
         backgroundColor: scheme.surface,
         indicatorColor: scheme.primaryContainer,
         selectedLabelTextStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: 3,
+        highlightElevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       dividerTheme: DividerThemeData(color: scheme.outlineVariant),
     );

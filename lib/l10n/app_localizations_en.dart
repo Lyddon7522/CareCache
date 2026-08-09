@@ -36,10 +36,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nothingNeedsAttentionDescription => 'No overdue tasks or low-stock supplies.';
 
   @override
-  String get getStarted => 'Add your first item';
+  String get everythingOnTrack => 'Everything is on track';
+
+  @override
+  String get getStarted => 'Start here';
+
+  @override
+  String get trackFirstSupply => 'Track your first supply';
+
+  @override
+  String get trackFirstSupplyDescription => 'Scan a barcode or add the details manually.';
 
   @override
   String get needsAttention => 'Needs attention';
+
+  @override
+  String attentionCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items need attention',
+      one: '1 item needs attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get attentionDescription => 'Review overdue schedules and supplies that are running low.';
 
   @override
   String get dueSoon => 'Due soon';
@@ -51,6 +74,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nextUp => 'Next up';
 
   @override
+  String get upcomingReminders => 'Upcoming reminders';
+
+  @override
+  String get noUpcomingReminders => 'No reminders scheduled';
+
+  @override
+  String get noUpcomingRemindersDescription =>
+      'Add a cleaning, replacement, or maintenance schedule.';
+
+  @override
   String get viewAll => 'View all';
 
   @override
@@ -58,6 +91,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusSummary => 'Status';
+
+  @override
+  String get inventorySnapshot => 'Inventory snapshot';
 
   @override
   String get scheduled => 'Scheduled';
@@ -595,6 +631,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String overdueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count overdue tasks',
+      one: '1 overdue task',
+      zero: 'Nothing overdue',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String deviceCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -625,6 +673,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String dueDateValue(String date) {
     return 'Due $date';
+  }
+
+  @override
+  String repeatsEvery(String cadence) {
+    return 'Repeats every $cadence';
   }
 
   @override

@@ -21,15 +21,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Overview'), findsNWidgets(2));
-    expect(find.text('Add your first item'), findsOneWidget);
-    expect(find.text('Scan supply'), findsOneWidget);
-    expect(find.text('Add supply'), findsOneWidget);
+    expect(find.text('Start here'), findsOneWidget);
+    expect(find.text('Track your first supply'), findsOneWidget);
+    expect(find.text('Scan supply'), findsNWidgets(2));
+    expect(find.text('Add supply'), findsNWidgets(2));
     expect(find.text('Add device'), findsOneWidget);
     expect(find.text('Add schedule'), findsOneWidget);
+    expect(find.text('Upcoming reminders'), findsOneWidget);
+    expect(find.text('No reminders scheduled'), findsOneWidget);
+    expect(find.text('Inventory snapshot'), findsOneWidget);
     expect(find.text('Private and on this device'), findsNothing);
     expect(find.text('Your care, at a glance'), findsNothing);
     expect(find.text('Start your care shelf'), findsNothing);
 
+    await tester.ensureVisible(find.byKey(const Key('upcoming-empty-card')));
+    await tester.tap(find.byKey(const Key('upcoming-empty-card')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New schedule'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
@@ -70,15 +82,64 @@ void main() {
         ),
       ),
     );
+    await dependencies.mediator.send<String>(
+      SaveTaskCommand(
+        CareTaskDraft(
+          title: 'Replace mask cushion',
+          kind: CareTaskKind.replace,
+          cadenceDays: 30,
+          nextDueAt: now.add(const Duration(days: 3)),
+          remindersEnabled: true,
+          reminderMinutesAfterMidnight: 9 * 60,
+        ),
+      ),
+    );
 
     await tester.pumpWidget(CareCacheApp(dependencies: dependencies));
     await tester.pumpAndSettle();
 
-    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.text('Needs attention'), findsWidgets);
     expect(find.text('Fine filter'), findsOneWidget);
     expect(find.text('Clean humidifier'), findsOneWidget);
-    expect(find.text('Status'), findsOneWidget);
-    expect(find.text('Add your first item'), findsNothing);
+    expect(find.text('Upcoming reminders'), findsOneWidget);
+    expect(find.text('Replace mask cushion'), findsOneWidget);
+    expect(find.text('Repeats every 30 days'), findsOneWidget);
+    expect(find.byKey(const Key('next-reminder-card')), findsOneWidget);
+    expect(find.text('Inventory snapshot'), findsOneWidget);
+    expect(find.text('Start here'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 1));
+    await dependencies.dispose();
+  });
+
+  testWidgets('keeps the Overview usable on a small phone with larger text', (tester) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+    });
+    final dependencies = await AppDependencies.create(
+      database: AppDatabase(NativeDatabase.memory()),
+      reminders: const NoopReminderScheduler(),
+    );
+
+    await tester.pumpWidget(CareCacheApp(dependencies: dependencies));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('overview-status-hero')), findsOneWidget);
+    expect(find.text('Upcoming reminders'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -700));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add or scan'), findsOneWidget);
+    expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));

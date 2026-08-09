@@ -146,17 +146,47 @@ abstract class AppLocalizations {
   /// **'No overdue tasks or low-stock supplies.'**
   String get nothingNeedsAttentionDescription;
 
+  /// No description provided for @everythingOnTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is on track'**
+  String get everythingOnTrack;
+
   /// No description provided for @getStarted.
   ///
   /// In en, this message translates to:
-  /// **'Add your first item'**
+  /// **'Start here'**
   String get getStarted;
+
+  /// No description provided for @trackFirstSupply.
+  ///
+  /// In en, this message translates to:
+  /// **'Track your first supply'**
+  String get trackFirstSupply;
+
+  /// No description provided for @trackFirstSupplyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a barcode or add the details manually.'**
+  String get trackFirstSupplyDescription;
 
   /// No description provided for @needsAttention.
   ///
   /// In en, this message translates to:
   /// **'Needs attention'**
   String get needsAttention;
+
+  /// No description provided for @attentionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item needs attention} other{{count} items need attention}}'**
+  String attentionCount(int count);
+
+  /// No description provided for @attentionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Review overdue schedules and supplies that are running low.'**
+  String get attentionDescription;
 
   /// No description provided for @dueSoon.
   ///
@@ -176,6 +206,24 @@ abstract class AppLocalizations {
   /// **'Next up'**
   String get nextUp;
 
+  /// No description provided for @upcomingReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming reminders'**
+  String get upcomingReminders;
+
+  /// No description provided for @noUpcomingReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminders scheduled'**
+  String get noUpcomingReminders;
+
+  /// No description provided for @noUpcomingRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cleaning, replacement, or maintenance schedule.'**
+  String get noUpcomingRemindersDescription;
+
   /// No description provided for @viewAll.
   ///
   /// In en, this message translates to:
@@ -193,6 +241,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get statusSummary;
+
+  /// No description provided for @inventorySnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory snapshot'**
+  String get inventorySnapshot;
 
   /// No description provided for @scheduled.
   ///
@@ -1184,6 +1238,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No scheduled tasks} =1{1 scheduled task} other{{count} scheduled tasks}}'**
   String taskCount(int count);
 
+  /// No description provided for @overdueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing overdue} =1{1 overdue task} other{{count} overdue tasks}}'**
+  String overdueCount(int count);
+
   /// No description provided for @deviceCount.
   ///
   /// In en, this message translates to:
@@ -1207,6 +1267,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Due {date}'**
   String dueDateValue(String date);
+
+  /// No description provided for @repeatsEvery.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats every {cadence}'**
+  String repeatsEvery(String cadence);
 
   /// No description provided for @categoryCpap.
   ///

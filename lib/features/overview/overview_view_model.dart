@@ -43,14 +43,13 @@ final class OverviewViewModel extends ChangeNotifier {
   int get scheduledTaskCount => _tasks.length;
   List<SupplyItem> get lowStock => _supplies.where((supply) => supply.isLowStock).toList();
   List<CareTask> get overdue => _tasks.where((task) => task.isOverdueAt(DateTime.now())).toList();
+  int get attentionCount => lowStock.length + overdue.length;
 
   List<CareTask> get upcoming {
     final now = DateTime.now();
-    final end = now.add(const Duration(days: 7));
-    return _tasks
-        .where((task) => !task.isOverdueAt(now) && task.isDueBy(end))
-        .take(4)
-        .toList(growable: false);
+    final tasks = _tasks.where((task) => !task.isOverdueAt(now)).toList(growable: false)
+      ..sort((left, right) => left.nextDueAt.compareTo(right.nextDueAt));
+    return tasks.take(3).toList(growable: false);
   }
 
   bool get nothingNeedsAttention => lowStock.isEmpty && overdue.isEmpty;
