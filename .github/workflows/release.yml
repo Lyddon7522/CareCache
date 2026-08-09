@@ -1,0 +1,439 @@
+name: CareCache Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag, such as v1.0.0
+        required: true
+        type: string
+      create_draft_release:
+        description: Archive builds on a draft GitHub release
+        required: true
+        default: true
+        type: boolean
+      deploy_beta:
+        description: Upload to Play Internal and TestFlight
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: carecache-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FASTLANE_OPT_OUT_USAGE: "YES"
+  FASTLANE_SKIP_UPDATE_CHECK: "YES"
+  FLUTTER_VERSION: 3.44.8
+
+jobs:
+  metadata:
+    name: Validate release metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      build_number: ${{ steps.release.outputs.build_number }}
+      release_sha: ${{ steps.release.outputs.release_sha }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+
+      - name: Validate immutable tag and pubspec version
+        id: release
+        env:
+          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tags must use vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          git show-ref --verify --quiet "refs/tags/$REQUESTED_TAG" || {
+            echo "::error::The requested release tag does not exist."
+            exit 1
+          }
+          VERSION="${REQUESTED_TAG#v}"
+          PUBSPEC_VERSION="$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | head -n 1)"
+          if [[ "$VERSION" != "${PUBSPEC_VERSION%%+*}" ]]; then
+            echo "::error::Tag $REQUESTED_TAG does not match pubspec.yaml $PUBSPEC_VERSION."
+            exit 1
+          fi
+          BUILD_NUMBER="$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))"
+          RELEASE_SHA="$(git rev-list -n 1 "$REQUESTED_TAG")"
+          {
+            echo "build_number=$BUILD_NUMBER"
+            echo "release_sha=$RELEASE_SHA"
+            echo "tag=$REQUESTED_TAG"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+  checks:
+    name: Verify release source
+    needs: metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out release SHA
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.release_sha }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Verify generated code
+        run: |
+          flutter gen-l10n
+          dart run build_runner build
+          dart format lib/core/database/app_database.g.dart lib/l10n
+          dart run tool/generate_icons.dart
+          git diff --exit-code
+
+      - name: Format, analyze, and test
+        run: |
+          dart format --output=none --set-exit-if-changed lib test tool
+          flutter analyze
+          flutter test
+
+  android:
+    name: Build signed Android artifacts
+    needs: [metadata, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: mobile-release
+    env:
+      CARECACHE_ANDROID_KEYSTORE_BASE64: ${{ secrets.CARECACHE_ANDROID_KEYSTORE_BASE64 }}
+      CARECACHE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.CARECACHE_ANDROID_KEYSTORE_PASSWORD }}
+      CARECACHE_ANDROID_KEY_ALIAS: ${{ secrets.CARECACHE_ANDROID_KEY_ALIAS }}
+      CARECACHE_ANDROID_KEY_PASSWORD: ${{ secrets.CARECACHE_ANDROID_KEY_PASSWORD }}
+      CARECACHE_REQUIRE_RELEASE_SIGNING: "true"
+
+    steps:
+      - name: Check out release SHA
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.release_sha }}
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Install Android upload key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variable_name in CARECACHE_ANDROID_KEYSTORE_BASE64 CARECACHE_ANDROID_KEYSTORE_PASSWORD CARECACHE_ANDROID_KEY_ALIAS CARECACHE_ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!variable_name}" ]]; then
+              echo "::error::$variable_name is not configured in mobile-release."
+              exit 1
+            fi
+          done
+          key_path="$RUNNER_TEMP/carecache-upload.jks"
+          printf '%s' "$CARECACHE_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$key_path"
+          chmod 600 "$key_path"
+          echo "CARECACHE_ANDROID_KEYSTORE_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Build signed app bundle and APK
+        run: |
+          flutter build appbundle --release \
+            --build-name="${{ needs.metadata.outputs.version }}" \
+            --build-number="${{ needs.metadata.outputs.build_number }}"
+          flutter build apk --release \
+            --build-name="${{ needs.metadata.outputs.version }}" \
+            --build-number="${{ needs.metadata.outputs.build_number }}"
+
+      - name: Verify signatures and package artifacts
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab="build/app/outputs/bundle/release/app-release.aab"
+          apk="build/app/outputs/flutter-apk/app-release.apk"
+          apksigner="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          jarsigner -verify "$aab" | tee "$RUNNER_TEMP/aab-verify.txt"
+          grep -q "jar verified" "$RUNNER_TEMP/aab-verify.txt"
+          "$apksigner" verify --verbose --print-certs "$apk"
+          release_dir="$RUNNER_TEMP/carecache-android"
+          label="${{ needs.metadata.outputs.version }}+${{ needs.metadata.outputs.build_number }}"
+          mkdir -p "$release_dir"
+          cp "$aab" "$release_dir/carecache-$label.aab"
+          cp "$apk" "$release_dir/carecache-$label.apk"
+          (cd "$release_dir" && sha256sum carecache-* > SHA256SUMS-android.txt)
+          echo "path=$release_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: carecache-android-${{ needs.metadata.outputs.version }}-${{ needs.metadata.outputs.build_number }}
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+          retention-days: 90
+
+  ios:
+    name: Build signed iOS artifacts
+    needs: [metadata, checks]
+    runs-on: macos-latest
+    timeout-minutes: 55
+    environment: mobile-release
+    env:
+      IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+      IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+
+    steps:
+      - name: Check out release SHA
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.release_sha }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Install Apple distribution identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variable_name in IOS_DISTRIBUTION_CERTIFICATE_BASE64 IOS_DISTRIBUTION_CERTIFICATE_PASSWORD IOS_PROVISIONING_PROFILE_BASE64 IOS_TEAM_ID; do
+            if [[ -z "${!variable_name}" ]]; then
+              echo "::error::$variable_name is not configured in mobile-release."
+              exit 1
+            fi
+          done
+          cert="$RUNNER_TEMP/carecache-distribution.p12"
+          profile="$RUNNER_TEMP/carecache-app-store.mobileprovision"
+          profile_plist="$RUNNER_TEMP/carecache-profile.plist"
+          keychain="$RUNNER_TEMP/carecache-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 32)"
+          echo "::add-mask::$keychain_password"
+          printf '%s' "$IOS_DISTRIBUTION_CERTIFICATE_BASE64" | base64 -D > "$cert"
+          printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | base64 -D > "$profile"
+          chmod 600 "$cert" "$profile"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$cert" -P "$IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security cms -D -i "$profile" > "$profile_plist"
+          uuid="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$profile_plist")"
+          name="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$profile_plist")"
+          team="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$profile_plist")"
+          app_id="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$profile_plist")"
+          [[ "$team" == "$IOS_TEAM_ID" ]]
+          [[ "$app_id" == *".com.vector42.carecache" ]]
+          install_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$install_dir"
+          cp "$profile" "$install_dir/$uuid.mobileprovision"
+          {
+            echo "CARECACHE_IOS_KEYCHAIN=$keychain"
+            echo "CARECACHE_IOS_PROFILE_NAME=$name"
+            echo "CARECACHE_IOS_PROFILE_UUID=$uuid"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare Flutter iOS build
+        run: |
+          flutter build ios --release --no-codesign \
+            --build-name="${{ needs.metadata.outputs.version }}" \
+            --build-number="${{ needs.metadata.outputs.build_number }}"
+
+      - name: Archive, export, and package IPA
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/CareCache.xcarchive"
+          export_dir="$RUNNER_TEMP/carecache-ios-export"
+          export_options="$RUNNER_TEMP/ExportOptions.plist"
+          release_dir="$RUNNER_TEMP/carecache-ios"
+          label="${{ needs.metadata.outputs.version }}+${{ needs.metadata.outputs.build_number }}"
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$archive" \
+            DEVELOPMENT_TEAM="$IOS_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$CARECACHE_IOS_PROFILE_NAME" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $CARECACHE_IOS_KEYCHAIN" \
+            FLUTTER_BUILD_NAME="${{ needs.metadata.outputs.version }}" \
+            FLUTTER_BUILD_NUMBER="${{ needs.metadata.outputs.build_number }}" \
+            archive
+          cp ios/ExportOptions.plist "$export_options"
+          /usr/libexec/PlistBuddy -c "Set :teamID $IOS_TEAM_ID" "$export_options"
+          /usr/libexec/PlistBuddy -c "Set :provisioningProfiles:com.vector42.carecache $CARECACHE_IOS_PROFILE_UUID" "$export_options"
+          xcodebuild -exportArchive -archivePath "$archive" -exportPath "$export_dir" -exportOptionsPlist "$export_options"
+          ipa="$(find "$export_dir" -maxdepth 1 -type f -name '*.ipa' -print -quit)"
+          test -n "$ipa"
+          mkdir -p "$release_dir"
+          cp "$ipa" "$release_dir/carecache-$label.ipa"
+          if [[ -d "$archive/dSYMs" ]]; then
+            ditto -c -k --sequesterRsrc --keepParent "$archive/dSYMs" "$release_dir/carecache-$label-dSYMs.zip"
+          fi
+          (cd "$release_dir" && shasum -a 256 carecache-* > SHA256SUMS-ios.txt)
+          echo "path=$release_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: carecache-ios-${{ needs.metadata.outputs.version }}-${{ needs.metadata.outputs.build_number }}
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Remove temporary Apple signing identity
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${CARECACHE_IOS_PROFILE_UUID:-}" ]]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$CARECACHE_IOS_PROFILE_UUID.mobileprovision"
+          fi
+          security delete-keychain "$RUNNER_TEMP/carecache-signing.keychain-db" 2>/dev/null || true
+
+  android-beta:
+    name: Deploy Google Play internal beta
+    needs: [metadata, android]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_beta }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: mobile-beta
+    env:
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.release_sha }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: carecache-android-${{ needs.metadata.outputs.version }}-${{ needs.metadata.outputs.build_number }}
+          path: beta-artifact
+      - name: Prepare Play credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64"
+          credentials="$RUNNER_TEMP/google-play-service-account.json"
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_BASE64" | base64 --decode > "$credentials"
+          chmod 600 "$credentials"
+          aab="$(find beta-artifact -type f -name '*.aab' -print -quit)"
+          test -n "$aab"
+          echo "GOOGLE_PLAY_CREDENTIALS_PATH=$credentials" >> "$GITHUB_ENV"
+          echo "CARECACHE_ANDROID_AAB_PATH=$aab" >> "$GITHUB_ENV"
+      - name: Upload to Play Internal
+        run: bundle exec fastlane android beta
+
+  ios-beta:
+    name: Deploy TestFlight internal beta
+    needs: [metadata, ios]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_beta }}
+    runs-on: macos-latest
+    timeout-minutes: 45
+    environment: mobile-beta
+    env:
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+      TESTFLIGHT_INTERNAL_GROUP: ${{ vars.TESTFLIGHT_INTERNAL_GROUP }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.metadata.outputs.release_sha }}
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: carecache-ios-${{ needs.metadata.outputs.version }}-${{ needs.metadata.outputs.build_number }}
+          path: beta-artifact
+      - name: Locate signed IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          ipa="$(find beta-artifact -type f -name '*.ipa' -print -quit)"
+          test -n "$ipa"
+          echo "CARECACHE_IOS_IPA_PATH=$ipa" >> "$GITHUB_ENV"
+      - name: Upload to TestFlight
+        run: bundle exec fastlane ios beta
+
+  draft-release:
+    name: Create draft GitHub release
+    needs: [metadata, android, ios]
+    if: ${{ github.event_name == 'push' || inputs.create_draft_release }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download signed artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: carecache-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create or refresh draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.metadata.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t assets < <(find release-assets -maxdepth 1 -type f -print | sort)
+          [[ "${#assets[@]}" -gt 0 ]]
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --draft --generate-notes --title "CareCache $RELEASE_VERSION" --verify-tag
+          fi

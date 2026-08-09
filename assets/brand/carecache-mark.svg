@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">CareCache mark</title>
+  <desc id="desc">An open letter C surrounding a forward-moving check.</desc>
+  <rect width="1024" height="1024" fill="#E5E7FF"/>
+  <path d="M745 745 A330 330 0 1 1 745 279" fill="none" stroke="#30358F"
+    stroke-width="112" stroke-linecap="round"/>
+  <path d="M350 518 L465 633 L748 352" fill="none" stroke="#C64B64"
+    stroke-width="88" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

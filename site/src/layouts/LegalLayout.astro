@@ -1,0 +1,33 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  heading: string;
+  intro: string;
+  effectiveDate: string;
+}
+
+const { title, description, heading, intro, effectiveDate } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <main id="main-content">
+    <header class="legal-hero">
+      <div class="narrow">
+        <p class="eyebrow">CareCache · Vector42</p>
+        <h1>{heading}</h1>
+        <p>{intro}</p>
+        <p class="effective">{effectiveDate}</p>
+      </div>
+    </header>
+    <div class="shell legal-grid">
+      <aside class="legal-toc" aria-label="On this page">
+        <strong>On this page</strong>
+        <slot name="contents" />
+      </aside>
+      <article class="legal-copy"><slot /></article>
+    </div>
+  </main>
+</BaseLayout>

@@ -1,0 +1,181 @@
+name: CareCache Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "assets/brand/**"
+      - "infra/site/**"
+      - ".github/workflows/site.yml"
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - "site/**"
+      - "assets/brand/**"
+      - "infra/site/**"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: carecache-site-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Check and build site
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.CARECACHE_SITE_URL }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Audit production dependencies
+        working-directory: site
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Verify static site
+        working-directory: site
+        run: npm run verify
+
+      - name: Upload prebuilt site
+        uses: actions/upload-artifact@v7
+        with:
+          name: carecache-site-${{ github.run_id }}
+          path: site/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy Azure Static Web App
+    needs: validate
+    if: >-
+      vars.AZURE_SITE_DEPLOY_ENABLED == 'true' &&
+      ((github.event_name != 'pull_request' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'))
+    environment: site-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AZURE_RESOURCE_GROUP_NAME: carecache-prod-rg-01
+      STATIC_WEB_APP_NAME: carecache-prod-swa-01
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Download prebuilt site
+        uses: actions/download-artifact@v8
+        with:
+          name: carecache-site-${{ github.run_id }}
+          path: site/dist
+
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Reconcile production infrastructure
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: azure/bicep-deploy@v2
+        with:
+          action-on-unmanage-resources: delete
+          deny-settings-mode: none
+          name: carecache-site-prod
+          operation: create
+          resource-group-name: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          scope: resourceGroup
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          template-file: ./infra/site/main.bicep
+          type: deploymentStack
+
+      - name: Read short-lived deployment token
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="$(az staticwebapp secrets list \
+            --name "$STATIC_WEB_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP_NAME" \
+            --query properties.apiKey \
+            --output tsv)"
+          test -n "$token"
+          echo "::add-mask::$token"
+          echo "AZURE_STATIC_WEB_APPS_API_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: Deploy prebuilt static files
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          action: upload
+          app_location: site/dist
+          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          production_branch: main
+          repo_token: ${{ github.token }}
+          skip_api_build: true
+          skip_app_build: true
+
+  close-preview:
+    name: Close Azure preview
+    if: >-
+      vars.AZURE_SITE_DEPLOY_ENABLED == 'true' &&
+      github.event_name == 'pull_request' && github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    environment: site-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AZURE_RESOURCE_GROUP_NAME: carecache-prod-rg-01
+      STATIC_WEB_APP_NAME: carecache-prod-swa-01
+
+    steps:
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Read short-lived deployment token
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="$(az staticwebapp secrets list \
+            --name "$STATIC_WEB_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP_NAME" \
+            --query properties.apiKey \
+            --output tsv)"
+          test -n "$token"
+          echo "::add-mask::$token"
+          echo "AZURE_STATIC_WEB_APPS_API_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: Close preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          action: close
+          azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ github.token }}

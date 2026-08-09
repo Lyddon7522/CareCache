@@ -1,0 +1,26 @@
+:root {
+  --care-color-primary: #4a4fc4;
+  --care-color-primary-strong: #30358f;
+  --care-color-primary-soft: #e5e7ff;
+  --care-color-accent: #c64b64;
+  --care-color-background: #f8f8fd;
+  --care-color-surface: #ffffff;
+  --care-color-text: #22243a;
+  --care-color-text-muted: #63667a;
+  --care-color-border: #dfe0ec;
+  --care-radius-input: 14px;
+  --care-radius-card: 20px;
+  --care-radius-sheet: 28px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --care-color-primary: #b9c0ff;
+    --care-color-accent: #ffb1c1;
+    --care-color-background: #11121e;
+    --care-color-surface: #1a1c2b;
+    --care-color-text: #e8e8f2;
+    --care-color-text-muted: #c6c5d2;
+    --care-color-border: #414354;
+  }
+}

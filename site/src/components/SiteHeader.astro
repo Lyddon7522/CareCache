@@ -1,0 +1,18 @@
+---
+import { siteConfig } from '../data/site';
+---
+
+<header class="site-header">
+  <div class="shell site-header__inner">
+    <a class="brand-link" href="/" aria-label={`${siteConfig.name} home`}>
+      <img src="/brand/carecache-glyph.svg" width="48" height="48" alt="" />
+      <strong>{siteConfig.name}</strong>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="/#features">Features</a>
+      <a href="/#privacy">Privacy</a>
+      <a href="/support/">Support</a>
+      <a class="button button--quiet" href={siteConfig.repositoryUrl}>Source</a>
+    </nav>
+  </div>
+</header>

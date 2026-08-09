@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { siteConfig } from '../data/site';
+
+const questions = [
+  ['Does CareCache need an account or internet?', 'No. The complete app works locally without an account. Network access occurs only when you choose to open an external link or hand a backup to an installed file provider.'],
+  ['Where are my records stored?', 'Inventory, schedules, device details, and preferences live in local SQLite storage and app-managed files on the active device.'],
+  ['How do I back up CareCache?', 'Open Settings, choose Export backup, and select local storage or a trusted file provider in the system share sheet. The resulting .carecache file is checksum validated.'],
+  ['Can I use a backup on another phone?', 'Yes, when that device runs a CareCache version that supports the backup format. Restore validates the entire file before replacing live records.'],
+  ['Are reminders guaranteed?', 'No. iOS and Android can delay or suppress notifications. Use another safeguard for anything time-sensitive.'],
+  ['Does barcode scanning look up products online?', 'No. Version 1 recognizes barcodes already saved on your device. The first scan of a new code asks you to enter or capture its details.'],
+  ['Does label capture upload a photo?', 'No. Text recognition runs through on-device native APIs. Review every suggestion before saving because recognition can be wrong.'],
+  ['What should a bug report include?', 'Include the app version, platform, operating-system version, locale, steps, expected result, and actual result. Use only fictional or redacted examples.'],
+];
+---
+
+<BaseLayout title="Support | CareCache" description="Help with CareCache local storage, backups, reminders, barcode scanning, label capture, and safe bug reports.">
+  <main id="main-content">
+    <header class="support-hero shell"><p class="eyebrow">CareCache support</p><h1>Help without sharing the private record.</h1><p>Find a quick answer or inspect the project. Never attach a real backup, prescription detail, serial number, barcode, or medical record to a public report.</p><a class="button button--primary" href={siteConfig.repositoryUrl}>View the project</a></header>
+    <section class="narrow faq" aria-label="Common questions">
+      {questions.map(([question, answer], index) => <details open={index === 0}><summary>{question}</summary><p>{answer}</p></details>)}
+    </section>
+  </main>
+</BaseLayout>
