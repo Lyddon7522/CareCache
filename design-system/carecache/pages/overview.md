@@ -12,8 +12,8 @@ This page extends the CareCache master system with a more expressive, content-fi
   abstract, low contrast, and outside the semantic tree.
 - Give the next scheduled task the strongest content card after the hero. Do not invent sample
   reminders or inventory data to fill empty states.
-- Quick actions use rounded icon pods and one visually dominant scan action. All other actions are
-  tonal and subordinate.
+- Quick actions sit directly below the page date in a compact four-item rail. They use rounded
+  icon pods with one visually dominant scan action; all other actions are tonal and subordinate.
 
 ## Interaction
 
@@ -24,17 +24,19 @@ This page extends the CareCache master system with a more expressive, content-fi
 
 ## Responsive behavior
 
-- Use two-column summary and action groups when at least 320 logical pixels are available.
-- Stack content at narrower widths and allow cards to grow vertically with text scaling.
+- Keep the four quick actions in one icon-first row at normal text sizes. At narrow widths or large
+  text sizes, reflow them into a two-column icon-leading grid so labels remain readable.
+- Use two-column summary groups when at least 320 logical pixels are available.
+- Stack other content at narrower widths and allow cards to grow vertically with text scaling.
 - Show the hero's decorative supply artwork only at 560 logical pixels and wider.
 
 ## Content order
 
-1. Current status and primary add/scan actions
-2. Concrete low-stock and overdue records, when present
-3. Upcoming reminders or an actionable empty state
-4. Inventory and schedule snapshot
-5. Secondary quick actions
+1. Primary add/scan actions
+2. Current status
+3. Concrete low-stock and overdue records, when present
+4. Upcoming reminders or an actionable empty state
+5. Inventory and schedule snapshot
 
 ## Avoid
 

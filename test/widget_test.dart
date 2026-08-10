@@ -26,7 +26,13 @@ void main() {
     expect(find.text('Scan supply'), findsNWidgets(2));
     expect(find.text('Add supply'), findsNWidgets(2));
     expect(find.text('Add device'), findsOneWidget);
-    expect(find.text('Add schedule'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('quick-action-add-schedule')),
+        matching: find.text('Schedule'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Upcoming reminders'), findsOneWidget);
     expect(find.text('No reminders scheduled'), findsOneWidget);
     expect(find.text('Inventory snapshot'), findsOneWidget);
@@ -35,6 +41,7 @@ void main() {
     expect(find.text('Start your care shelf'), findsNothing);
 
     await tester.ensureVisible(find.byKey(const Key('upcoming-empty-card')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('upcoming-empty-card')));
     await tester.pumpAndSettle();
 
@@ -114,6 +121,50 @@ void main() {
     await dependencies.dispose();
   });
 
+  testWidgets('quick actions stay compact and open their destinations', (tester) async {
+    tester.view.physicalSize = const Size(430, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final dependencies = await AppDependencies.create(
+      database: AppDatabase(NativeDatabase.memory()),
+      reminders: const NoopReminderScheduler(),
+    );
+
+    await tester.pumpWidget(CareCacheApp(dependencies: dependencies));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('quick-actions-grid')));
+    await tester.pumpAndSettle();
+
+    const actionKeys = <Key>[
+      Key('quick-action-scan'),
+      Key('quick-action-add-supply'),
+      Key('quick-action-add-schedule'),
+      Key('quick-action-add-device'),
+    ];
+    for (final key in actionKeys) {
+      expect(find.byKey(key), findsOneWidget);
+      expect(tester.getSize(find.byKey(key)).height, greaterThanOrEqualTo(48));
+    }
+    final firstActionTop = tester.getTopLeft(find.byKey(actionKeys.first)).dy;
+    for (final key in actionKeys.skip(1)) {
+      expect(tester.getTopLeft(find.byKey(key)).dy, closeTo(firstActionTop, 0.1));
+    }
+    expect(tester.getSize(find.byKey(const Key('quick-actions-grid'))).height, lessThan(130));
+
+    await tester.tap(find.byKey(const Key('quick-action-add-schedule')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New schedule'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 1));
+    await dependencies.dispose();
+  });
+
   testWidgets('keeps the Overview usable on a small phone with larger text', (tester) async {
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1;
@@ -133,12 +184,18 @@ void main() {
 
     expect(find.byKey(const Key('overview-status-hero')), findsOneWidget);
     expect(find.text('Upcoming reminders'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await tester.drag(find.byType(ListView), const Offset(0, -700));
+    expect(find.text('Add or scan'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('quick-actions-grid')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Add or scan'), findsOneWidget);
+    final scanTop = tester.getTopLeft(find.byKey(const Key('quick-action-scan'))).dy;
+    final supplyTop = tester.getTopLeft(find.byKey(const Key('quick-action-add-supply'))).dy;
+    final scheduleTop = tester.getTopLeft(find.byKey(const Key('quick-action-add-schedule'))).dy;
+    final deviceTop = tester.getTopLeft(find.byKey(const Key('quick-action-add-device'))).dy;
+    expect(supplyTop, closeTo(scanTop, 0.1));
+    expect(scheduleTop, greaterThan(scanTop));
+    expect(deviceTop, closeTo(scheduleTop, 0.1));
+    expect(tester.getSize(find.byKey(const Key('quick-actions-grid'))).height, lessThan(170));
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());

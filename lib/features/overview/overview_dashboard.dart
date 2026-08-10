@@ -19,6 +19,8 @@ class OverviewDashboard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        const _QuickActionsSection(),
+        const SizedBox(height: 24),
         _StatusHero(viewModel: viewModel),
         if (!viewModel.nothingNeedsAttention) ...<Widget>[
           const SizedBox(height: 28),
@@ -30,8 +32,6 @@ class OverviewDashboard extends StatelessWidget {
         _UpcomingSection(tasks: viewModel.upcoming),
         const SizedBox(height: 28),
         _SnapshotSection(viewModel: viewModel),
-        const SizedBox(height: 28),
-        const _QuickActionsSection(),
       ],
     );
   }
@@ -787,93 +787,138 @@ class _QuickActionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final actions = <Widget>[
-      _QuickActionCard(
-        icon: Icons.qr_code_scanner_rounded,
-        label: context.l10n.scanSupply,
-        foreground: Colors.white,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[CareColors.primaryStrong, CareColors.primary],
-          ),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: CareColors.primary.withValues(alpha: 0.20),
-              blurRadius: 18,
-              offset: const Offset(0, 9),
+    final actions =
+        <
+          ({
+            Key key,
+            IconData icon,
+            String label,
+            Color iconForeground,
+            BoxDecoration iconDecoration,
+            VoidCallback onTap,
+          })
+        >[
+          (
+            key: const Key('quick-action-scan'),
+            icon: Icons.qr_code_scanner_rounded,
+            label: context.l10n.scanSupply,
+            iconForeground: Colors.white,
+            iconDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[CareColors.primaryStrong, CareColors.primary],
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: CareColors.primary.withValues(alpha: 0.24),
+                  blurRadius: 14,
+                  offset: const Offset(0, 7),
+                ),
+              ],
             ),
-          ],
-        ),
-        onTap: () => context.push('/scan'),
-      ),
-      _QuickActionCard(
-        icon: Icons.add_shopping_cart_rounded,
-        label: context.l10n.addSupply,
-        foreground: colors.onPrimaryContainer,
-        decoration: BoxDecoration(
-          color: colors.primaryContainer,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        onTap: () => context.push('/inventory/new'),
-      ),
-      _QuickActionCard(
-        icon: Icons.event_repeat_rounded,
-        label: context.l10n.addTask,
-        foreground: colors.onSecondaryContainer,
-        decoration: BoxDecoration(
-          color: colors.secondaryContainer,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        onTap: () => context.push('/schedule/new'),
-      ),
-      _QuickActionCard(
-        icon: Icons.devices_other_rounded,
-        label: context.l10n.addDevice,
-        foreground: colors.onSurface,
-        decoration: BoxDecoration(
-          color: colors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        onTap: () => context.push('/devices/new'),
-      ),
-    ];
+            onTap: () => context.push('/scan'),
+          ),
+          (
+            key: const Key('quick-action-add-supply'),
+            icon: Icons.add_box_outlined,
+            label: context.l10n.addSupply,
+            iconForeground: colors.onPrimaryContainer,
+            iconDecoration: BoxDecoration(
+              color: colors.primaryContainer,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colors.primary.withValues(alpha: 0.12)),
+            ),
+            onTap: () => context.push('/inventory/new'),
+          ),
+          (
+            key: const Key('quick-action-add-schedule'),
+            icon: Icons.event_repeat_rounded,
+            label: context.l10n.scheduleTitle,
+            iconForeground: colors.onSecondaryContainer,
+            iconDecoration: BoxDecoration(
+              color: colors.secondaryContainer,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colors.secondary.withValues(alpha: 0.12)),
+            ),
+            onTap: () => context.push('/schedule/new'),
+          ),
+          (
+            key: const Key('quick-action-add-device'),
+            icon: Icons.devices_other_outlined,
+            label: context.l10n.addDevice,
+            iconForeground: colors.onTertiaryContainer,
+            iconDecoration: BoxDecoration(
+              color: colors.tertiaryContainer,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colors.tertiary.withValues(alpha: 0.12)),
+            ),
+            onTap: () => context.push('/devices/new'),
+          ),
+        ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _SectionHeader(title: context.l10n.quickActions),
         const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth < 300 ? 1 : 2;
-            final width = columns == 1 ? constraints.maxWidth : (constraints.maxWidth - 12) / 2;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: actions.map((action) => SizedBox(width: width, child: action)).toList(),
-            );
-          },
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final labelScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+                final useIconLeadingLayout = constraints.maxWidth < 320 || labelScale > 1.3;
+                final columns = useIconLeadingLayout ? 2 : 4;
+                const spacing = 8.0;
+                final width = (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+                return Wrap(
+                  key: const Key('quick-actions-grid'),
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: actions
+                      .map(
+                        (action) => SizedBox(
+                          width: width,
+                          child: _QuickActionButton(
+                            key: action.key,
+                            icon: action.icon,
+                            label: action.label,
+                            iconForeground: action.iconForeground,
+                            iconDecoration: action.iconDecoration,
+                            iconLeading: useIconLeadingLayout,
+                            onTap: action.onTap,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
     required this.icon,
     required this.label,
-    required this.foreground,
-    required this.decoration,
+    required this.iconForeground,
+    required this.iconDecoration,
+    required this.iconLeading,
     required this.onTap,
+    super.key,
   });
 
   final IconData icon;
   final String label;
-  final Color foreground;
-  final Decoration decoration;
+  final Color iconForeground;
+  final BoxDecoration iconDecoration;
+  final bool iconLeading;
   final VoidCallback onTap;
 
   @override
@@ -881,33 +926,102 @@ class _QuickActionCard extends StatelessWidget {
     return _TactileSurface(
       semanticsLabel: label,
       onTap: onTap,
-      decoration: decoration,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 112),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: foreground.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(9),
-                  child: Icon(icon, color: foreground, size: 23),
+      borderRadius: BorderRadius.circular(18),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(18)),
+      child: iconLeading ? _buildIconLeading(context) : _buildIconAbove(context),
+    );
+  }
+
+  Widget _buildIconAbove(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 94),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            _QuickActionIcon(
+              icon: icon,
+              foreground: iconForeground,
+              decoration: iconDecoration,
+            ),
+            const SizedBox(height: 9),
+            SizedBox(
+              height: 17,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconLeading(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 68),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        child: Row(
+          children: <Widget>[
+            _QuickActionIcon(
+              icon: icon,
+              foreground: iconForeground,
+              decoration: iconDecoration,
+              size: 48,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
                 label,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(color: foreground, fontWeight: FontWeight.w900),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionIcon extends StatelessWidget {
+  const _QuickActionIcon({
+    required this.icon,
+    required this.foreground,
+    required this.decoration,
+    this.size = 52,
+  });
+
+  final IconData icon;
+  final Color foreground;
+  final BoxDecoration decoration;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: DecoratedBox(
+        decoration: decoration,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Icon(icon, color: foreground, size: 24),
         ),
       ),
     );
@@ -920,12 +1034,14 @@ class _TactileSurface extends StatefulWidget {
     required this.onTap,
     required this.decoration,
     required this.child,
+    this.borderRadius = const BorderRadius.all(Radius.circular(24)),
   });
 
   final String semanticsLabel;
   final VoidCallback onTap;
   final Decoration decoration;
   final Widget child;
+  final BorderRadius borderRadius;
 
   @override
   State<_TactileSurface> createState() => _TactileSurfaceState();
@@ -937,22 +1053,22 @@ class _TactileSurfaceState extends State<_TactileSurface> {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.of(context).disableAnimations;
-    const radius = BorderRadius.all(Radius.circular(24));
     return Semantics(
       button: true,
       label: widget.semanticsLabel,
+      excludeSemantics: true,
       child: AnimatedScale(
         scale: _pressed ? 0.985 : 1,
         duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: Material(
           color: Colors.transparent,
-          borderRadius: radius,
+          borderRadius: widget.borderRadius,
           clipBehavior: Clip.antiAlias,
           child: Ink(
             decoration: widget.decoration,
             child: InkWell(
-              borderRadius: radius,
+              borderRadius: widget.borderRadius,
               onTap: widget.onTap,
               onHighlightChanged: (value) {
                 if (_pressed == value) {
