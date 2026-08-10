@@ -146,4 +146,46 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1));
     await dependencies.dispose();
   });
+
+  testWidgets('bottom navigation returns top-level pages to the top', (tester) async {
+    final dependencies = await AppDependencies.create(
+      database: AppDatabase(NativeDatabase.memory()),
+      reminders: const NoopReminderScheduler(),
+    );
+    await tester.pumpWidget(CareCacheApp(dependencies: dependencies));
+    await tester.pumpAndSettle();
+
+    double visiblePageOffset() {
+      final scrollable = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      );
+      return tester.state<ScrollableState>(scrollable.first).position.pixels;
+    }
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(visiblePageOffset(), greaterThan(0));
+
+    await tester.tap(find.byIcon(Icons.inventory_2_outlined));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.dashboard_outlined));
+    await tester.pumpAndSettle();
+
+    expect(visiblePageOffset(), 0);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(visiblePageOffset(), greaterThan(0));
+
+    await tester.tap(find.byIcon(Icons.dashboard_rounded));
+    await tester.pumpAndSettle();
+
+    expect(visiblePageOffset(), 0);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 1));
+    await dependencies.dispose();
+  });
 }

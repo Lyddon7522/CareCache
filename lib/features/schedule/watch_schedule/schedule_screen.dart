@@ -51,6 +51,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         animation: _viewModel,
         builder: (context, _) {
           return CarePageBody(
+            navigationIndex: 2,
             children: <Widget>[
               CarePageHeader(
                 title: context.l10n.scheduleTitle,

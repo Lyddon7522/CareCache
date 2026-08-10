@@ -60,6 +60,7 @@ class _OverviewScreenState extends State<OverviewScreen> {
         animation: _viewModel,
         builder: (context, _) {
           return CarePageBody(
+            navigationIndex: 0,
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 112),
             children: <Widget>[
               Semantics(

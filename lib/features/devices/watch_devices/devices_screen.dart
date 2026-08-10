@@ -50,6 +50,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
         animation: _viewModel,
         builder: (context, _) {
           return CarePageBody(
+            navigationIndex: 3,
             children: <Widget>[
               CarePageHeader(
                 title: context.l10n.devicesTitle,

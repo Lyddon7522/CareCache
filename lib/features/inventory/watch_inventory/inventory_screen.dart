@@ -51,6 +51,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         animation: _viewModel,
         builder: (context, _) {
           return CarePageBody(
+            navigationIndex: 1,
             children: <Widget>[
               CarePageHeader(
                 title: context.l10n.inventoryTitle,
