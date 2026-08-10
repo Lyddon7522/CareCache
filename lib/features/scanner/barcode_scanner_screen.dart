@@ -8,17 +8,21 @@ import '../../core/cqrs/mediator.dart';
 import '../../core/localization/localization.dart';
 import '../inventory/adjust_inventory/adjust_inventory.dart';
 import '../inventory/find_supply_by_barcode/find_supply_by_barcode.dart';
+import '../inventory/inventory_store.dart';
+import '../inventory/mark_supply_replaced/mark_supply_replaced.dart';
 import '../inventory/supply.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({
     required this.mediator,
     this.returnBarcodeOnly = false,
+    this.replacementMode = false,
     super.key,
-  });
+  }) : assert(!returnBarcodeOnly || !replacementMode);
 
   final Mediator mediator;
   final bool returnBarcodeOnly;
+  final bool replacementMode;
 
   @override
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
@@ -35,7 +39,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     return Scaffold(
       backgroundColor: _started ? Colors.black : null,
       appBar: AppBar(
-        title: Text(context.l10n.scanTitle),
+        title: Text(widget.replacementMode ? context.l10n.scanReplacement : context.l10n.scanTitle),
         backgroundColor: _started ? Colors.black : null,
         foregroundColor: _started ? Colors.white : null,
       ),
@@ -71,7 +75,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      context.l10n.cameraPermissionDescription,
+                      widget.replacementMode
+                          ? context.l10n.replacementCameraPermissionDescription
+                          : context.l10n.cameraPermissionDescription,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
@@ -155,7 +161,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  context.l10n.scanInstruction,
+                  widget.replacementMode
+                      ? context.l10n.replacementScanInstruction
+                      : context.l10n.scanInstruction,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white),
                 ),
@@ -209,6 +217,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
     var shouldRestart = true;
     try {
+      if (widget.replacementMode) {
+        shouldRestart = await _confirmScannedReplacement(value);
+        return;
+      }
       final supply = await widget.mediator.query<Future<SupplyItem?>>(
         FindSupplyByBarcodeQuery(value),
       );
@@ -285,6 +297,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         shouldRestart = false;
         context.pushReplacement('/inventory/${supply.id}');
       }
+    } on ReplacementInventoryEmptyException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.replacementInventoryEmpty)),
+        );
+      }
     } on Object {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -301,6 +319,37 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
   }
 
+  Future<bool> _confirmScannedReplacement(String barcode) async {
+    final supply = await widget.mediator.query<Future<SupplyItem?>>(
+      FindSupplyByBarcodeQuery(barcode),
+    );
+    if (!mounted) {
+      return false;
+    }
+    if (supply == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.replacementBarcodeNotFound)),
+      );
+      return true;
+    }
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (context) => _ReplacementConfirmationSheet(supply: supply),
+    );
+    if (confirmed != true || !mounted) {
+      return true;
+    }
+    await widget.mediator.send<void>(
+      MarkSupplyReplacedCommand(supply.id, scannedBarcode: barcode),
+    );
+    if (mounted) {
+      context.pop(true);
+    }
+    return false;
+  }
+
   Future<void> _enterManually() async {
     final shouldResumeScanner = _started && !_scannerFailed;
     if (shouldResumeScanner) {
@@ -315,6 +364,75 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     } else if (shouldResumeScanner && mounted) {
       setState(() => _scannerActive = true);
     }
+  }
+}
+
+class _ReplacementConfirmationSheet extends StatelessWidget {
+  const _ReplacementConfirmationSheet({required this.supply});
+
+  final SupplyItem supply;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.secondaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(Icons.autorenew_rounded, color: colors.onSecondaryContainer),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  context.l10n.replaceSupplyTitle(supply.name),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.replacementConfirmDescription(supply.unitLabel),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.quantityValue(supply.quantityOnHand, supply.unitLabel),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 22),
+          FilledButton.icon(
+            onPressed: () => context.pop(true),
+            icon: const Icon(Icons.autorenew_rounded),
+            label: Text(context.l10n.markReplaced),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => context.pop(false),
+            child: Text(context.l10n.cancel),
+          ),
+        ],
+      ),
+    );
   }
 }
 

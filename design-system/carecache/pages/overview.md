@@ -12,8 +12,9 @@ This page extends the CareCache master system with a more expressive, content-fi
   abstract, low contrast, and outside the semantic tree.
 - Give the next scheduled task the strongest content card after the hero. Do not invent sample
   reminders or inventory data to fill empty states.
-- Quick actions sit directly below the page date in a compact four-item rail. They use rounded
-  icon pods with one visually dominant scan action; all other actions are tonal and subordinate.
+- Quick actions sit directly below the page date in a compact five-item rail. They use rounded
+  icon pods with visually dominant scan and replacement actions; the add actions remain tonal and
+  subordinate.
 
 ## Interaction
 
@@ -24,8 +25,10 @@ This page extends the CareCache master system with a more expressive, content-fi
 
 ## Responsive behavior
 
-- Keep the four quick actions in one icon-first row at normal text sizes. At narrow widths or large
-  text sizes, reflow them into a two-column icon-leading grid so labels remain readable.
+- Keep quick actions in one horizontally scrollable, icon-first row at normal text sizes. On
+  compact screens, reveal part of the next action as the scrolling affordance; show the full row
+  when it fits. At narrow widths or large text sizes, reflow into a two-column icon-leading grid so
+  labels remain readable.
 - Use two-column summary groups when at least 320 logical pixels are available.
 - Stack other content at narrower widths and allow cards to grow vertically with text scaling.
 - Show the hero's decorative supply artwork only at 560 logical pixels and wider.
@@ -43,4 +46,4 @@ This page extends the CareCache master system with a more expressive, content-fi
 - Generic wellness language, fake progress, or decorative cards without an action or data point
 - A photo-led medical aesthetic that could be mistaken for user health data
 - Multiple competing gradients, neon accents, glass blur, or exaggerated clay shadows
-- Horizontal carousels for primary actions or reminders
+- Long or paginated carousels that hide critical actions, or horizontal reminder carousels

@@ -261,6 +261,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stockUpdated => 'Inventory updated.';
 
   @override
+  String get replace => 'Replace';
+
+  @override
   String get markReplaced => 'Mark replaced';
 
   @override
@@ -296,6 +299,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get replacementScanned => 'Replacement recorded. One item was deducted from inventory.';
+
+  @override
+  String get replacementCameraPermissionDescription =>
+      'CareCache uses the camera only while you scan. Scan the saved barcode on the replacement item to identify the supply and deduct one from inventory. You can also enter the barcode manually.';
+
+  @override
+  String get replacementScanInstruction =>
+      'Center the saved barcode on the replacement item inside the frame.';
+
+  @override
+  String replacementConfirmDescription(String unit) {
+    return 'Record this replacement and deduct one $unit from inventory?';
+  }
+
+  @override
+  String get replacementBarcodeNotFound =>
+      'No supply matches that barcode. Inventory was not changed. Add the barcode to the supply and try again.';
 
   @override
   String get stockIn => 'Stock in';

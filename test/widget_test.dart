@@ -121,7 +121,7 @@ void main() {
     await dependencies.dispose();
   });
 
-  testWidgets('quick actions stay compact and open their destinations', (tester) async {
+  testWidgets('quick actions scroll horizontally and open their destinations', (tester) async {
     tester.view.physicalSize = const Size(430, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -135,11 +135,12 @@ void main() {
 
     await tester.pumpWidget(CareCacheApp(dependencies: dependencies));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('quick-actions-grid')));
+    await tester.ensureVisible(find.byKey(const Key('quick-actions-scroll')));
     await tester.pumpAndSettle();
 
     const actionKeys = <Key>[
       Key('quick-action-scan'),
+      Key('quick-action-replace'),
       Key('quick-action-add-supply'),
       Key('quick-action-add-schedule'),
       Key('quick-action-add-device'),
@@ -153,6 +154,16 @@ void main() {
       expect(tester.getTopLeft(find.byKey(key)).dy, closeTo(firstActionTop, 0.1));
     }
     expect(tester.getSize(find.byKey(const Key('quick-actions-grid'))).height, lessThan(130));
+    final railScrollable = find.descendant(
+      of: find.byKey(const Key('quick-actions-scroll')),
+      matching: find.byType(Scrollable),
+    );
+    final railPosition = tester.state<ScrollableState>(railScrollable).position;
+    expect(railPosition.maxScrollExtent, greaterThan(0));
+
+    await tester.drag(find.byKey(const Key('quick-actions-scroll')), const Offset(-120, 0));
+    await tester.pumpAndSettle();
+    expect(railPosition.pixels, greaterThan(0));
 
     await tester.tap(find.byKey(const Key('quick-action-add-schedule')));
     await tester.pumpAndSettle();
@@ -189,13 +200,16 @@ void main() {
     await tester.pumpAndSettle();
 
     final scanTop = tester.getTopLeft(find.byKey(const Key('quick-action-scan'))).dy;
+    final replaceTop = tester.getTopLeft(find.byKey(const Key('quick-action-replace'))).dy;
     final supplyTop = tester.getTopLeft(find.byKey(const Key('quick-action-add-supply'))).dy;
     final scheduleTop = tester.getTopLeft(find.byKey(const Key('quick-action-add-schedule'))).dy;
     final deviceTop = tester.getTopLeft(find.byKey(const Key('quick-action-add-device'))).dy;
-    expect(supplyTop, closeTo(scanTop, 0.1));
-    expect(scheduleTop, greaterThan(scanTop));
-    expect(deviceTop, closeTo(scheduleTop, 0.1));
-    expect(tester.getSize(find.byKey(const Key('quick-actions-grid'))).height, lessThan(170));
+    expect(replaceTop, closeTo(scanTop, 0.1));
+    expect(supplyTop, greaterThan(scanTop));
+    expect(scheduleTop, closeTo(supplyTop, 0.1));
+    expect(deviceTop, greaterThan(scheduleTop));
+    expect(find.byKey(const Key('quick-actions-scroll')), findsNothing);
+    expect(tester.getSize(find.byKey(const Key('quick-actions-grid'))).height, lessThan(250));
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());

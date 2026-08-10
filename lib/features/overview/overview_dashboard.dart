@@ -821,6 +821,24 @@ class _QuickActionsSection extends StatelessWidget {
             onTap: () => context.push('/scan'),
           ),
           (
+            key: const Key('quick-action-replace'),
+            icon: Icons.autorenew_rounded,
+            label: context.l10n.replace,
+            iconForeground: colors.onSecondary,
+            iconDecoration: BoxDecoration(
+              color: colors.secondary,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: colors.secondary.withValues(alpha: 0.20),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            onTap: () => _scanReplacement(context),
+          ),
+          (
             key: const Key('quick-action-add-supply'),
             icon: Icons.add_box_outlined,
             label: context.l10n.addSupply,
@@ -865,34 +883,78 @@ class _QuickActionsSection extends StatelessWidget {
           builder: (context, constraints) {
             final labelScale = MediaQuery.textScalerOf(context).scale(14) / 14;
             final useIconLeadingLayout = constraints.maxWidth < 320 || labelScale > 1.3;
-            final columns = useIconLeadingLayout ? 2 : 4;
             const spacing = 8.0;
-            final width = (constraints.maxWidth - (spacing * (columns - 1))) / columns;
-            return Wrap(
-              key: const Key('quick-actions-grid'),
-              spacing: spacing,
-              runSpacing: spacing,
-              children: actions
-                  .map(
-                    (action) => SizedBox(
-                      width: width,
-                      child: _QuickActionButton(
-                        key: action.key,
-                        icon: action.icon,
-                        label: action.label,
-                        iconForeground: action.iconForeground,
-                        iconDecoration: action.iconDecoration,
-                        iconLeading: useIconLeadingLayout,
-                        onTap: action.onTap,
+            if (useIconLeadingLayout) {
+              const columns = 2;
+              final width = (constraints.maxWidth - spacing) / columns;
+              return Wrap(
+                key: const Key('quick-actions-grid'),
+                spacing: spacing,
+                runSpacing: spacing,
+                children: actions
+                    .map(
+                      (action) => SizedBox(
+                        width: width,
+                        child: _QuickActionButton(
+                          key: action.key,
+                          icon: action.icon,
+                          label: action.label,
+                          iconForeground: action.iconForeground,
+                          iconDecoration: action.iconDecoration,
+                          iconLeading: true,
+                          onTap: action.onTap,
+                        ),
                       ),
-                    ),
-                  )
-                  .toList(),
+                    )
+                    .toList(),
+              );
+            }
+            const visibleActionCount = 4;
+            const nextActionPeek = 40.0;
+            final preferredWidth =
+                (constraints.maxWidth - nextActionPeek - (spacing * visibleActionCount)) /
+                visibleActionCount;
+            final actionWidth = preferredWidth.clamp(80.0, 104.0).toDouble();
+            return SizedBox(
+              height: 94,
+              child: SingleChildScrollView(
+                key: const Key('quick-actions-scroll'),
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  key: const Key('quick-actions-grid'),
+                  children: <Widget>[
+                    for (var index = 0; index < actions.length; index++) ...<Widget>[
+                      if (index > 0) const SizedBox(width: spacing),
+                      SizedBox(
+                        width: actionWidth,
+                        child: _QuickActionButton(
+                          key: actions[index].key,
+                          icon: actions[index].icon,
+                          label: actions[index].label,
+                          iconForeground: actions[index].iconForeground,
+                          iconDecoration: actions[index].iconDecoration,
+                          iconLeading: false,
+                          onTap: actions[index].onTap,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             );
           },
         ),
       ),
     );
+  }
+
+  Future<void> _scanReplacement(BuildContext context) async {
+    final recorded = await context.push<bool>('/scan?replacement=true');
+    if (recorded == true && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.replacementScanned)));
+    }
   }
 }
 

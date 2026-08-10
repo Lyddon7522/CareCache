@@ -64,6 +64,7 @@ GoRouter createAppRouter(Mediator mediator) {
         builder: (context, state) => BarcodeScannerScreen(
           mediator: mediator,
           returnBarcodeOnly: state.uri.queryParameters['returnBarcode'] == 'true',
+          replacementMode: state.uri.queryParameters['replacement'] == 'true',
         ),
       ),
       GoRoute(

@@ -578,6 +578,12 @@ abstract class AppLocalizations {
   /// **'Inventory updated.'**
   String get stockUpdated;
 
+  /// No description provided for @replace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replace;
+
   /// No description provided for @markReplaced.
   ///
   /// In en, this message translates to:
@@ -637,6 +643,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replacement recorded. One item was deducted from inventory.'**
   String get replacementScanned;
+
+  /// No description provided for @replacementCameraPermissionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'CareCache uses the camera only while you scan. Scan the saved barcode on the replacement item to identify the supply and deduct one from inventory. You can also enter the barcode manually.'**
+  String get replacementCameraPermissionDescription;
+
+  /// No description provided for @replacementScanInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Center the saved barcode on the replacement item inside the frame.'**
+  String get replacementScanInstruction;
+
+  /// No description provided for @replacementConfirmDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Record this replacement and deduct one {unit} from inventory?'**
+  String replacementConfirmDescription(String unit);
+
+  /// No description provided for @replacementBarcodeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No supply matches that barcode. Inventory was not changed. Add the barcode to the supply and try again.'**
+  String get replacementBarcodeNotFound;
 
   /// No description provided for @stockIn.
   ///

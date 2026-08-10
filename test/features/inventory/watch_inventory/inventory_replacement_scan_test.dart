@@ -9,6 +9,75 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('Overview replacement scan confirms the supply and deducts one item', (tester) async {
+    final dependencies = await _pumpInventory(
+      tester,
+      barcode: '555555555555',
+      openInventory: false,
+    );
+
+    await tester.tap(find.byKey(const Key('quick-action-replace')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Scan replacement'), findsOneWidget);
+    expect(find.text('Camera access is optional'), findsOneWidget);
+    await _enterBarcode(tester, '555555555555');
+
+    expect(find.text('Replace Synthetic mask cushion'), findsOneWidget);
+    expect(
+      find.text('Record this replacement and deduct one cushion from inventory?'),
+      findsOneWidget,
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Mark replaced'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Replacement recorded. One item was deducted from inventory.'),
+      findsOneWidget,
+    );
+    final supply = await dependencies.database
+        .select(dependencies.database.supplyRecords)
+        .getSingle();
+    final events = await dependencies.database
+        .select(dependencies.database.inventoryEventRecords)
+        .get();
+    expect(supply.quantityOnHand, 1);
+    expect(
+      events.where((event) => event.kind == InventoryEventKind.replacement.name).single.delta,
+      -1,
+    );
+    await _disposeApp(tester, dependencies);
+  });
+
+  testWidgets('an unknown Overview replacement barcode leaves inventory unchanged', (tester) async {
+    final dependencies = await _pumpInventory(
+      tester,
+      barcode: '444444444444',
+      openInventory: false,
+    );
+
+    await tester.tap(find.byKey(const Key('quick-action-replace')));
+    await tester.pumpAndSettle();
+    await _enterBarcode(tester, '333333333333');
+
+    expect(
+      find.text(
+        'No supply matches that barcode. Inventory was not changed. '
+        'Add the barcode to the supply and try again.',
+      ),
+      findsOneWidget,
+    );
+    final supply = await dependencies.database
+        .select(dependencies.database.supplyRecords)
+        .getSingle();
+    final events = await dependencies.database
+        .select(dependencies.database.inventoryEventRecords)
+        .get();
+    expect(supply.quantityOnHand, 2);
+    expect(events.where((event) => event.kind == InventoryEventKind.replacement.name), isEmpty);
+    await _disposeApp(tester, dependencies);
+  });
+
   testWidgets('scanning a matching replacement deducts one item', (tester) async {
     final dependencies = await _pumpInventory(
       tester,
@@ -97,6 +166,7 @@ void main() {
 Future<AppDependencies> _pumpInventory(
   WidgetTester tester, {
   required String barcode,
+  bool openInventory = true,
 }) async {
   tester.view.physicalSize = const Size(430, 900);
   tester.view.devicePixelRatio = 1;
@@ -124,12 +194,14 @@ Future<AppDependencies> _pumpInventory(
 
   await tester.pumpWidget(CareCacheApp(dependencies: dependencies));
   await tester.pumpAndSettle();
-  final inventoryDestination = find.descendant(
-    of: find.byType(NavigationBar),
-    matching: find.byIcon(Icons.inventory_2_outlined),
-  );
-  await tester.tap(inventoryDestination);
-  await tester.pumpAndSettle();
+  if (openInventory) {
+    final inventoryDestination = find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(Icons.inventory_2_outlined),
+    );
+    await tester.tap(inventoryDestination);
+    await tester.pumpAndSettle();
+  }
   return dependencies;
 }
 
