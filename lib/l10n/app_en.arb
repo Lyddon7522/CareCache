@@ -89,6 +89,24 @@
   "stockUpdated": "Inventory updated.",
   "markReplaced": "Mark replaced",
   "replacementRecorded": "Replacement recorded.",
+  "replaceSupplyTitle": "Replace {name}",
+  "@replaceSupplyTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "replacementScanDescription": "Scan the saved barcode to confirm this item and deduct one from inventory.",
+  "scanReplacement": "Scan replacement",
+  "recordWithoutScanning": "Record without scanning",
+  "replacementBarcodeMissing": "Save a barcode for this supply to confirm replacements by scan.",
+  "replacementBarcodeMismatch": "That barcode does not match {name}. Inventory was not changed.",
+  "@replacementBarcodeMismatch": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "replacementInventoryEmpty": "There is no stock to deduct. Stock one in or record the replacement without scanning.",
+  "replacementScanned": "Replacement recorded. One item was deducted from inventory.",
   "stockIn": "Stock in",
   "useOne": "Use one",
   "adjust": "Adjust",

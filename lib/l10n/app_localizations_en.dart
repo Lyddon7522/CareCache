@@ -270,6 +270,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get replacementRecorded => 'Replacement recorded.';
 
   @override
+  String replaceSupplyTitle(String name) {
+    return 'Replace $name';
+  }
+
+  @override
+  String get replacementScanDescription =>
+      'Scan the saved barcode to confirm this item and deduct one from inventory.';
+
+  @override
+  String get scanReplacement => 'Scan replacement';
+
+  @override
+  String get recordWithoutScanning => 'Record without scanning';
+
+  @override
+  String get replacementBarcodeMissing =>
+      'Save a barcode for this supply to confirm replacements by scan.';
+
+  @override
+  String replacementBarcodeMismatch(String name) {
+    return 'That barcode does not match $name. Inventory was not changed.';
+  }
+
+  @override
+  String get replacementInventoryEmpty =>
+      'There is no stock to deduct. Stock one in or record the replacement without scanning.';
+
+  @override
+  String get replacementScanned => 'Replacement recorded. One item was deducted from inventory.';
+
+  @override
   String get stockIn => 'Stock in';
 
   @override

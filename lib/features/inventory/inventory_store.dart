@@ -16,7 +16,11 @@ abstract interface class InventoryStore {
     String? note,
   });
 
-  Future<void> markReplaced(String supplyId, {DateTime? replacedAt});
+  Future<void> markReplaced(
+    String supplyId, {
+    DateTime? replacedAt,
+    String? scannedBarcode,
+  });
 
   Future<void> archive(String id);
 }
@@ -31,4 +35,17 @@ final class SupplyNotFoundException implements Exception {
   const SupplyNotFoundException(this.id);
 
   final String id;
+}
+
+final class SupplyBarcodeMismatchException implements Exception {
+  const SupplyBarcodeMismatchException(this.supplyId, this.scannedBarcode);
+
+  final String supplyId;
+  final String scannedBarcode;
+}
+
+final class ReplacementInventoryEmptyException implements Exception {
+  const ReplacementInventoryEmptyException(this.supplyId);
+
+  final String supplyId;
 }

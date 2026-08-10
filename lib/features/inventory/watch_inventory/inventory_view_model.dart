@@ -90,8 +90,10 @@ final class InventoryViewModel extends ChangeNotifier {
     );
   }
 
-  Future<void> markReplaced(SupplyItem supply) {
-    return _mediator.send<void>(MarkSupplyReplacedCommand(supply.id));
+  Future<void> markReplaced(SupplyItem supply, {String? scannedBarcode}) {
+    return _mediator.send<void>(
+      MarkSupplyReplacedCommand(supply.id, scannedBarcode: scannedBarcode),
+    );
   }
 
   void _onSupplies(List<SupplyItem> supplies) {

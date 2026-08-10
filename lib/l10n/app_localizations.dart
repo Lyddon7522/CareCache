@@ -596,6 +596,54 @@ abstract class AppLocalizations {
   /// **'Replacement recorded.'**
   String get replacementRecorded;
 
+  /// No description provided for @replaceSupplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace {name}'**
+  String replaceSupplyTitle(String name);
+
+  /// No description provided for @replacementScanDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the saved barcode to confirm this item and deduct one from inventory.'**
+  String get replacementScanDescription;
+
+  /// No description provided for @scanReplacement.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan replacement'**
+  String get scanReplacement;
+
+  /// No description provided for @recordWithoutScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Record without scanning'**
+  String get recordWithoutScanning;
+
+  /// No description provided for @replacementBarcodeMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a barcode for this supply to confirm replacements by scan.'**
+  String get replacementBarcodeMissing;
+
+  /// No description provided for @replacementBarcodeMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'That barcode does not match {name}. Inventory was not changed.'**
+  String replacementBarcodeMismatch(String name);
+
+  /// No description provided for @replacementInventoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no stock to deduct. Stock one in or record the replacement without scanning.'**
+  String get replacementInventoryEmpty;
+
+  /// No description provided for @replacementScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement recorded. One item was deducted from inventory.'**
+  String get replacementScanned;
+
   /// No description provided for @stockIn.
   ///
   /// In en, this message translates to:

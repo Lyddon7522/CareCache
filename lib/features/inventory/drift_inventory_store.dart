@@ -158,13 +158,26 @@ final class DriftInventoryStore implements InventoryStore {
   }
 
   @override
-  Future<void> markReplaced(String supplyId, {DateTime? replacedAt}) async {
+  Future<void> markReplaced(
+    String supplyId, {
+    DateTime? replacedAt,
+    String? scannedBarcode,
+  }) async {
     await _database.transaction(() async {
       final query = _database.select(_database.supplyRecords)
         ..where((table) => table.id.equals(supplyId) & table.archivedAt.isNull());
       final existing = await query.getSingleOrNull();
       if (existing == null) {
         throw SupplyNotFoundException(supplyId);
+      }
+      if (scannedBarcode != null) {
+        final normalizedBarcode = _optionalText(scannedBarcode);
+        if (normalizedBarcode == null || normalizedBarcode != existing.barcode) {
+          throw SupplyBarcodeMismatchException(supplyId, normalizedBarcode ?? '');
+        }
+        if (existing.quantityOnHand == 0) {
+          throw ReplacementInventoryEmptyException(supplyId);
+        }
       }
       final completed = (replacedAt ?? DateTime.now()).toUtc();
       final cadence = existing.replacementCadenceDays;

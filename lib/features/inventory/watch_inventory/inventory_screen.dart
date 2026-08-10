@@ -7,6 +7,7 @@ import '../../../core/widgets/care_page.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../inventory_localization.dart';
+import '../inventory_store.dart';
 import '../supply.dart';
 import 'inventory_view_model.dart';
 
@@ -140,10 +141,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                         onStockIn: () => _runAction(
                           () => _viewModel.stockIn(_viewModel.supplies[index]),
                         ),
-                        onReplaced: () => _runAction(
-                          () => _viewModel.markReplaced(_viewModel.supplies[index]),
-                          successMessage: context.l10n.replacementRecorded,
-                        ),
+                        onReplaced: () => _replaceSupply(_viewModel.supplies[index]),
                       ),
                     );
                   },
@@ -168,6 +166,144 @@ class _InventoryScreenState extends State<InventoryScreen> {
         );
       }
     }
+  }
+
+  Future<void> _replaceSupply(SupplyItem supply) async {
+    final choice = await showModalBottomSheet<_ReplacementChoice>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      useRootNavigator: true,
+      builder: (context) => _ReplacementSheet(supply: supply),
+    );
+    if (!mounted || choice == null) {
+      return;
+    }
+    switch (choice) {
+      case _ReplacementChoice.scan:
+        final barcode = await context.push<String>('/scan?returnBarcode=true');
+        if (barcode != null && barcode.isNotEmpty && mounted) {
+          await _recordReplacement(supply, scannedBarcode: barcode);
+        }
+        return;
+      case _ReplacementChoice.record:
+        await _recordReplacement(supply);
+        return;
+      case _ReplacementChoice.edit:
+        await context.push<void>('/inventory/${supply.id}');
+        return;
+    }
+  }
+
+  Future<void> _recordReplacement(SupplyItem supply, {String? scannedBarcode}) async {
+    try {
+      await _viewModel.markReplaced(supply, scannedBarcode: scannedBarcode);
+      if (mounted) {
+        final message = scannedBarcode == null
+            ? context.l10n.replacementRecorded
+            : context.l10n.replacementScanned;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } on SupplyBarcodeMismatchException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.replacementBarcodeMismatch(supply.name))),
+        );
+      }
+    } on ReplacementInventoryEmptyException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.replacementInventoryEmpty)),
+        );
+      }
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.unexpectedError)),
+        );
+      }
+    }
+  }
+}
+
+enum _ReplacementChoice { scan, record, edit }
+
+class _ReplacementSheet extends StatelessWidget {
+  const _ReplacementSheet({required this.supply});
+
+  final SupplyItem supply;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final hasBarcode = supply.barcode?.trim().isNotEmpty ?? false;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(Icons.autorenew_rounded, color: colors.onPrimaryContainer),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  context.l10n.replaceSupplyTitle(supply.name),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            hasBarcode
+                ? context.l10n.replacementScanDescription
+                : context.l10n.replacementBarcodeMissing,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.quantityValue(supply.quantityOnHand, supply.unitLabel),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 22),
+          if (hasBarcode)
+            FilledButton.icon(
+              onPressed: () => context.pop(_ReplacementChoice.scan),
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              label: Text(context.l10n.scanReplacement),
+            )
+          else
+            FilledButton.icon(
+              onPressed: () => context.pop(_ReplacementChoice.edit),
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(context.l10n.editSupplyTitle),
+            ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => context.pop(_ReplacementChoice.record),
+            child: Text(context.l10n.recordWithoutScanning),
+          ),
+        ],
+      ),
+    );
   }
 }
 
