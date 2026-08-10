@@ -184,7 +184,7 @@ void main() {
 
     expect(find.byKey(const Key('overview-status-hero')), findsOneWidget);
     expect(find.text('Upcoming reminders'), findsOneWidget);
-    expect(find.text('Add or scan'), findsOneWidget);
+    expect(find.text('Add or scan'), findsNothing);
     await tester.ensureVisible(find.byKey(const Key('quick-actions-grid')));
     await tester.pumpAndSettle();
 

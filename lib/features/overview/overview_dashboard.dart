@@ -857,48 +857,41 @@ class _QuickActionsSection extends StatelessWidget {
             onTap: () => context.push('/devices/new'),
           ),
         ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        _SectionHeader(title: context.l10n.quickActions),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final labelScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-                final useIconLeadingLayout = constraints.maxWidth < 320 || labelScale > 1.3;
-                final columns = useIconLeadingLayout ? 2 : 4;
-                const spacing = 8.0;
-                final width = (constraints.maxWidth - (spacing * (columns - 1))) / columns;
-                return Wrap(
-                  key: const Key('quick-actions-grid'),
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: actions
-                      .map(
-                        (action) => SizedBox(
-                          width: width,
-                          child: _QuickActionButton(
-                            key: action.key,
-                            icon: action.icon,
-                            label: action.label,
-                            iconForeground: action.iconForeground,
-                            iconDecoration: action.iconDecoration,
-                            iconLeading: useIconLeadingLayout,
-                            onTap: action.onTap,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
-            ),
-          ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final labelScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+            final useIconLeadingLayout = constraints.maxWidth < 320 || labelScale > 1.3;
+            final columns = useIconLeadingLayout ? 2 : 4;
+            const spacing = 8.0;
+            final width = (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+            return Wrap(
+              key: const Key('quick-actions-grid'),
+              spacing: spacing,
+              runSpacing: spacing,
+              children: actions
+                  .map(
+                    (action) => SizedBox(
+                      width: width,
+                      child: _QuickActionButton(
+                        key: action.key,
+                        icon: action.icon,
+                        label: action.label,
+                        iconForeground: action.iconForeground,
+                        iconDecoration: action.iconDecoration,
+                        iconLeading: useIconLeadingLayout,
+                        onTap: action.onTap,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 }

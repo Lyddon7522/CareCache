@@ -87,9 +87,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewAll => 'View all';
 
   @override
-  String get quickActions => 'Add or scan';
-
-  @override
   String get statusSummary => 'Status';
 
   @override

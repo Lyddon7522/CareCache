@@ -230,12 +230,6 @@ abstract class AppLocalizations {
   /// **'View all'**
   String get viewAll;
 
-  /// No description provided for @quickActions.
-  ///
-  /// In en, this message translates to:
-  /// **'Add or scan'**
-  String get quickActions;
-
   /// No description provided for @statusSummary.
   ///
   /// In en, this message translates to:
