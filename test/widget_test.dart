@@ -25,6 +25,15 @@ void main() {
     expect(find.text('Track your first supply'), findsOneWidget);
     expect(find.text('Scan supply'), findsNWidgets(2));
     expect(find.text('Add supply'), findsNWidgets(2));
+    final emptyHero = find.byKey(const Key('overview-status-hero'));
+    expect(
+      find.descendant(of: emptyHero, matching: find.text('Scan supply')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: emptyHero, matching: find.text('Add supply')),
+      findsOneWidget,
+    );
     expect(find.text('Add device'), findsOneWidget);
     expect(
       find.descendant(
@@ -114,6 +123,17 @@ void main() {
     expect(find.byKey(const Key('next-reminder-card')), findsOneWidget);
     expect(find.text('Inventory snapshot'), findsOneWidget);
     expect(find.text('Start here'), findsNothing);
+    expect(find.text('Scan supply'), findsOneWidget);
+    expect(find.text('Add supply'), findsOneWidget);
+    final populatedHero = find.byKey(const Key('overview-status-hero'));
+    expect(
+      find.descendant(of: populatedHero, matching: find.text('Scan supply')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: populatedHero, matching: find.text('Add supply')),
+      findsNothing,
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 1));

@@ -10,6 +10,8 @@ This page extends the CareCache master system with a more expressive, content-fi
   shadows, and tonal surfaces rather than introducing unrelated colors.
 - Use the hero for real status and high-value actions. Decorative shapes remain code-native,
   abstract, low contrast, and outside the semantic tree.
+- Keep the hero's scan and add actions only in the first-run empty state. Once content exists, the
+  hero is status-focused and the quick-action rail remains the consistent command surface.
 - Give the next scheduled task the strongest content card after the hero. Do not invent sample
   reminders or inventory data to fill empty states.
 - Quick actions sit directly below the page date in a compact five-item rail. They use rounded

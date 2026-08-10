@@ -148,34 +148,36 @@ class _StatusHero extends StatelessWidget {
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 22),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: <Widget>[
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: CareColors.primaryStrong,
-                              shadowColor: Colors.black.withValues(alpha: 0.18),
+                      if (isEmpty) ...<Widget>[
+                        const SizedBox(height: 22),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: <Widget>[
+                            FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: CareColors.primaryStrong,
+                                shadowColor: Colors.black.withValues(alpha: 0.18),
+                              ),
+                              onPressed: () => context.push('/scan'),
+                              icon: const Icon(Icons.qr_code_scanner_rounded),
+                              label: Text(context.l10n.scanSupply),
                             ),
-                            onPressed: () => context.push('/scan'),
-                            icon: const Icon(Icons.qr_code_scanner_rounded),
-                            label: Text(context.l10n.scanSupply),
-                          ),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(48, 52),
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(48, 52),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              onPressed: () => context.push('/inventory/new'),
+                              icon: const Icon(Icons.add_rounded),
+                              label: Text(context.l10n.addSupply),
                             ),
-                            onPressed: () => context.push('/inventory/new'),
-                            icon: const Icon(Icons.add_rounded),
-                            label: Text(context.l10n.addSupply),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
