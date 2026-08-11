@@ -67,10 +67,29 @@ jobs:
         run: flutter analyze
 
       - name: Run unit and widget tests
-        run: flutter test --coverage
+        run: flutter test --coverage --file-reporter json:test-results.json
+
+      - name: Add test results to job summary
+        if: ${{ !cancelled() && hashFiles('test-results.json') != '' }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: Flutter tests
+          path: test-results.json
+          reporter: flutter-json
+          use-actions-summary: true
+          list-tests: failed
+          max-annotations: 0
 
       - name: Build Android debug APK
         run: flutter build apk --debug
+
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: carecache-android-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload coverage
         if: always() && hashFiles('coverage/lcov.info') != ''
