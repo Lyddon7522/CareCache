@@ -4,6 +4,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Upgrade these with Flutter: localizations pins intl, and flutter_test pins
+    # meta to a version incompatible with newer build_runner/analyzer releases.
+    ignore:
+      - dependency-name: intl
+      - dependency-name: build_runner
+      # 2.4.0 breaks CocoaPods; 3.x needs a UPC barcode compatibility migration.
+      - dependency-name: flutter_zxing
+        versions: [">=2.4.0"]
     groups:
       flutter-dependencies:
         patterns: ["*"]

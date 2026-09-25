@@ -4907,8 +4907,14 @@ class $$DeviceRecordsTableTableManager
                 archivedAt: archivedAt,
                 rowid: rowid,
               ),
-          withReferenceMapper: (p0) =>
-              p0.map((e) => (e.readTable(table), BaseReferences(db, table, e))).toList(),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DeviceRecordsTable, DeviceRecord>(table),
+                  BaseReferences<_$AppDatabase, $DeviceRecordsTable, DeviceRecord>(db, table, e),
+                ),
+              )
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );
@@ -5501,7 +5507,7 @@ class $$SupplyRecordsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$SupplyRecordsTable, SupplyRecord>(table),
                   $$SupplyRecordsTableReferences(db, table, e),
                 ),
               )
@@ -5838,7 +5844,7 @@ class $$InventoryEventRecordsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$InventoryEventRecordsTable, InventoryEventRecord>(table),
                   $$InventoryEventRecordsTableReferences(db, table, e),
                 ),
               )
@@ -6336,7 +6342,7 @@ class $$CareTaskRecordsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CareTaskRecordsTable, CareTaskRecord>(table),
                   $$CareTaskRecordsTableReferences(db, table, e),
                 ),
               )
@@ -6635,7 +6641,7 @@ class $$TaskCompletionRecordsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TaskCompletionRecordsTable, TaskCompletionRecord>(table),
                   $$TaskCompletionRecordsTableReferences(db, table, e),
                 ),
               )
@@ -6840,8 +6846,18 @@ class $$PreferenceRecordsTableTableManager
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
-          withReferenceMapper: (p0) =>
-              p0.map((e) => (e.readTable(table), BaseReferences(db, table, e))).toList(),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PreferenceRecordsTable, PreferenceRecord>(table),
+                  BaseReferences<_$AppDatabase, $PreferenceRecordsTable, PreferenceRecord>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
           prefetchHooksCallback: null,
         ),
       );
