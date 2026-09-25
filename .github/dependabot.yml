@@ -7,6 +7,8 @@ updates:
     groups:
       flutter-dependencies:
         patterns: ["*"]
+        # Review SDK-coupled and barcode-format upgrades in their own visible PRs.
+        exclude-patterns: ["intl", "build_runner", "flutter_zxing"]
   - package-ecosystem: npm
     directory: /site
     schedule:
