@@ -3,6 +3,8 @@
 Static Astro site for CareCache product information, support, privacy, and terms. It has no
 analytics, cookies, account system, forms, or remote assets.
 
+Requires Node.js 22.19.0 or newer and npm.
+
 ```sh
 npm ci
 npm run verify

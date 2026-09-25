@@ -14,6 +14,8 @@ updates:
     groups:
       astro-dependencies:
         patterns: ["*"]
+        # Keep compiler upgrades visible in separate PRs while Astro support catches up.
+        exclude-patterns: ["typescript"]
   - package-ecosystem: bundler
     directory: /
     schedule:
